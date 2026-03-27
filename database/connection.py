@@ -27,11 +27,11 @@ class DatabaseConnection:
         # Hint: Use os.getenv() to get environment variables
         # You'll need: DB_HOST, DB_NAME, DB_USER, DB_PASSWORD, DB_PORT
         
-        self.host = None  # TODO: Get from environment
-        self.database = None  # TODO: Get from environment  
-        self.user = None  # TODO: Get from environment
-        self.password = None  # TODO: Get from environment
-        self.port = None  # TODO: Get from environment (default: 5432)
+        self.host = os.getenv("DB_HOST")
+        self.database = os.getenv("DB_NAME")
+        self.user = os.getenv("DB_USER")
+        self.password = os.getenv("DB_PASSWORD")
+        self.port = os.getenv("DB_PORT", 5432)
         
         self.connection = None
     
@@ -43,11 +43,15 @@ class DatabaseConnection:
             bool: True if connection successful, False otherwise
         """
         try:
-            # TODO: Create database connection using psycopg2.connect()
-            # Use the connection parameters from __init__
-            # Set cursor_factory=RealDictCursor for dictionary-like results
-            
-            pass  # Remove this when you implement the function
+            self.connection = psycopg2.connect(
+                host=self.host,
+                database=self.database,
+                user=self.user,
+                password=self.password,
+                port=self.port,
+                cursor_factory=RealDictCursor
+            )
+            return True
             
         except Exception as e:
             print(f"❌ Database connection failed: {e}")
@@ -60,7 +64,9 @@ class DatabaseConnection:
         # TODO: Close the connection if it exists
         # Check if self.connection exists and close it
         
-        pass  # Remove this when you implement
+        if self.connection:
+            self.connection.close()
+            self.connection = None
     
     def execute_query(self, query, params=None):
         """
@@ -80,7 +86,13 @@ class DatabaseConnection:
             # 3. Fetch and return results
             # 4. Close cursor
             
-            pass  # Remove this when you implement
+            cursor = self.connection.cursor()
+            cursor.execute(query, params)
+
+            results = cursor.fetchall()
+            cursor.close()
+
+            return results
             
         except Exception as e:
             print(f"❌ Query execution failed: {e}")
@@ -105,7 +117,13 @@ class DatabaseConnection:
             # 4. Close cursor
             # 5. Return True if successful
             
-            pass  # Remove this when you implement
+            cursor = self.connection.cursor()
+            cursor.execute(query, params)
+
+            self.connection.commit()
+            cursor.close()
+
+            return True
             
         except Exception as e:
             print(f"❌ Update query failed: {e}")
