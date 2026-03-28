@@ -34,7 +34,8 @@ class DatabaseConnection:
         self.port = os.getenv("DB_PORT", 5432)
         
         self.connection = None
-    
+        print("DEBUG:", self.user, self.password)  # ✅ HERE
+
     def connect(self):
         """
         Establish connection to the PostgreSQL database
@@ -79,13 +80,17 @@ class DatabaseConnection:
         Returns:
             list: Query results as list of dictionaries
         """
-        try:
+        
             # TODO: Execute query using cursor
             # 1. Create cursor from self.connection
             # 2. Execute query with optional parameters
             # 3. Fetch and return results
             # 4. Close cursor
-            
+        try:
+            if not self.connection:
+                print("❌ No active database connection")
+                return []
+
             cursor = self.connection.cursor()
             cursor.execute(query, params)
 
@@ -93,7 +98,7 @@ class DatabaseConnection:
             cursor.close()
 
             return results
-            
+
         except Exception as e:
             print(f"❌ Query execution failed: {e}")
             return []
@@ -128,6 +133,7 @@ class DatabaseConnection:
         except Exception as e:
             print(f"❌ Update query failed: {e}")
             # TODO: Rollback the transaction on error
+            self.connection.rollback()
             return False
     
     def test_connection(self):
