@@ -3,7 +3,7 @@
 Category Model
 Handles category data operations for organizing transactions
 
-TODO: Complete the Category class with CRUD operations
+# TODO: Complete the Category class with CRUD operations
 """
 
 from database.connection import DatabaseConnection
@@ -45,20 +45,24 @@ class Category:
             if self.id:
                 # TODO: UPDATE existing category
                 query = """
-                -- TODO: Write UPDATE query
-                -- UPDATE categories SET name = %s, type = %s, description = %s WHERE id = %s
+                
+                UPDATE categories 
+                SET name = %s, type = %s, description = %s 
+                WHERE id = %s
                 """
                 # Use self.db.execute_update() with parameters
-                pass
+                return self.db.execute_update(query, (self.name, self.type, self.description, self.id))
             else:
                 # TODO: INSERT new category
                 query = """
-                -- TODO: Write INSERT query with RETURNING id
-                -- INSERT INTO categories (name, type, description) VALUES (%s, %s, %s) RETURNING id
+                INSERT INTO categories (name, type, description) VALUES (%s, %s, %s) RETURNING id
                 """
                 # Use self.db.execute_query() to get the new ID
-                pass
-                
+                result = self.db.execute_query(query, (self.name, self.type, self.description))
+                if result:
+                    self.id = result[0]['id']
+                    return True
+                return False
         except Exception as e:
             print(f"❌ Error saving category: {e}")
             return False
@@ -80,7 +84,19 @@ class Category:
         # - type is 'income' or 'expense'
         # - name length is reasonable (< 50 characters)
         
-        pass
+        if not self.name or not self.name.strip():
+            print("❌ Name cannot be empty")
+            return False
+
+        if len(self.name) > 50:
+            print("❌ Name too long (max 50 chars)")
+            return False
+
+        if self.type not in ['income', 'expense']:
+            print("❌ Type must be 'income' or 'expense'")
+            return False
+
+        return True
     
     @staticmethod
     def get_all():
@@ -91,12 +107,15 @@ class Category:
             list: List of Category objects
         """
         db = DatabaseConnection()
+        if not db.connect():
+            return []
         db.connect()
         
         # TODO: Write SQL query to get all categories
         query = """
-        -- TODO: SELECT all categories ordered by type, then name
-        -- SELECT id, name, type, description FROM categories ORDER BY type, name
+        SELECT id, name, type, description 
+        FROM categories 
+        ORDER BY type, name
         """
         
         results = db.execute_query(query)
@@ -106,6 +125,14 @@ class Category:
         # TODO: Convert results to Category objects
         # Loop through results and create Category instances
         
+        for row in results:
+            categories.append(Category(
+                name=row['name'],
+                category_type=row['type'],
+                description=row['description'],
+                category_id=row['id']
+            ))
+    
         return categories
     
     @staticmethod
@@ -122,7 +149,32 @@ class Category:
         # TODO: Implement type filtering
         # Similar to get_all() but with WHERE type = %s
         
-        pass
+        db = DatabaseConnection()
+        if not db.connect():
+            return []
+        db.connect()
+    
+        query = """
+        SELECT id, name, type, description
+        FROM categories
+        WHERE type = %s
+        ORDER BY name
+        """
+        
+        results = db.execute_query(query, (category_type,))
+        db.disconnect()
+        
+        categories = []
+        
+        for row in results:
+            categories.append(Category(
+                name=row['name'],
+                category_type=row['type'],
+                description=row['description'],
+                category_id=row['id']
+        ))
+        
+        return categories
     
     @staticmethod
     def get_by_id(category_id):
@@ -136,7 +188,30 @@ class Category:
             Category: Category object or None if not found
         """
         # TODO: Implement get_by_id
-        pass
+        db = DatabaseConnection()
+        if not db.connect():
+            return []
+        db.connect()
+    
+        query = """
+        SELECT id, name, type, description
+        FROM categories
+        WHERE id = %s
+        """
+        
+        result = db.execute_query(query, (category_id,))
+        db.disconnect()
+        
+        if result:
+            row = result[0]
+            return Category(
+                name=row['name'],
+                category_type=row['type'],
+                description=row['description'],
+                category_id=row['id']
+            )
+        
+        return None
     
     def get_transaction_count(self):
         """
@@ -152,8 +227,9 @@ class Category:
         
         # TODO: Count transactions in this category
         query = """
-        -- TODO: COUNT transactions for this category
-        -- SELECT COUNT(*) as count FROM transactions WHERE category_id = %s
+        SELECT COUNT(*) as count
+        FROM transactions
+        WHERE category_id = %s
         """
         
         result = self.db.execute_query(query, (self.id,))
@@ -185,7 +261,13 @@ class Category:
         # TODO: Implement delete
         # DELETE FROM categories WHERE id = %s
         
-        pass
+        self.db.connect()
+
+        try:
+            query = "DELETE FROM categories WHERE id = %s"
+            return self.db.execute_update(query, (self.id,))
+        finally:
+            self.db.disconnect()
     
     def __str__(self):
         """
